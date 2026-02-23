@@ -30,10 +30,13 @@ import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.LinearProgressIndicator
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
@@ -72,22 +75,26 @@ fun GameScreen(
     val combo by viewModel.combo.collectAsState()
     val hits by viewModel.hits.collectAsState()
     val misses by viewModel.misses.collectAsState()
-    val soundEnabled by viewModel.soundEnabled.collectAsState()
+//    val soundEnabled by viewModel.soundEnabled.collectAsState()
+    val sfxVolume by viewModel.sfxVolume.collectAsState()
     val vibrationEnabled by viewModel.vibrationEnabled.collectAsState()
-    val difficulty by viewModel.difficulty.collectAsState()
-
+//    val difficulty by viewModel.difficulty.collectAsState()
     val context = LocalContext.current
     val soundManager = (context.applicationContext as WhackAMoleApp).soundManager
+    val currentLevel by viewModel.currentLevel.collectAsState()
+    val hitsThisLevel by viewModel.hitsThisLevel.collectAsState()
+    var gameStarted by remember { mutableStateOf(false) }
 
     // Start the game when this screen appears
     LaunchedEffect(Unit) {
-        viewModel.startGame()
+        soundManager.switchToGameMusic(context)
+        gameStarted = true
     }
 
     // Navigate to game over screen when game ends
     LaunchedEffect(isGameOver) {
-        if (isGameOver) {
-            if (soundEnabled) soundManager.playGameOver()
+        if (isGameOver && gameStarted) {
+            if (sfxVolume > 0f) soundManager.playGameOver()
             onGameOver()
         }
     }
@@ -95,9 +102,10 @@ fun GameScreen(
     Column(
         modifier = Modifier
             .fillMaxSize()
-            .background(Color(0xFF8BC34A)) // Light green background
-            .padding(16.dp),
-        horizontalAlignment = Alignment.CenterHorizontally
+            .background(Color(0xFF9AB678)) // Light green background
+            .padding(20.dp),
+        horizontalAlignment = Alignment.CenterHorizontally,
+        verticalArrangement = Arrangement.Center
     ) {
         // ==================== Top Bar: Score & Timer ====================
         ScoreAndTimerBar(score = score, timeRemaining = timeRemaining, combo = combo)
@@ -121,19 +129,28 @@ fun GameScreen(
 
         Spacer(modifier = Modifier.height(8.dp))
 
-        // Difficulty indicator
-        Text(
-            text = "Difficulty: $difficulty",
-            color = Color.White.copy(alpha = 0.7f),
-            fontSize = 14.sp
-        )
-
+        Row(
+            modifier = Modifier.fillMaxWidth(),
+            horizontalArrangement = Arrangement.SpaceBetween
+        ) {
+            Text(
+                text = "Level $currentLevel",
+                color = Color.White,
+                fontSize = 16.sp,
+                fontWeight = FontWeight.Bold
+            )
+            Text(
+                text = "Next level: $hitsThisLevel/${GameViewModel.HITS_PER_LEVEL} hits",
+                color = Color.White.copy(alpha = 0.7f),
+                fontSize = 14.sp
+            )
+        }
         Spacer(modifier = Modifier.height(16.dp))
 
         // ==================== 3x3 Mole Grid ====================
         MoleGrid(
             activeMoleIndex = activeMoleIndex,
-            soundEnabled = soundEnabled,
+            soundEnabled = sfxVolume > 0f,
             vibrationEnabled = vibrationEnabled,
             context = context,
             soundManager = soundManager,

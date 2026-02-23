@@ -6,9 +6,11 @@ import androidx.compose.animation.core.infiniteRepeatable
 import androidx.compose.animation.core.rememberInfiniteTransition
 import androidx.compose.animation.core.tween
 import androidx.compose.foundation.background
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
@@ -16,22 +18,32 @@ import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
+import androidx.compose.material3.Card
+import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.DisposableEffect
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.scale
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import edu.singaporetech.whackamole.WhackAMoleApp
 import edu.singaporetech.whackamole.viewmodel.GameViewModel
 
 /**
@@ -51,8 +63,14 @@ fun MenuScreen(
     onLeaderboard: () -> Unit,
     onSettings: () -> Unit
 ) {
-    val playerName by viewModel.playerName.collectAsState()
+//    val playerName by viewModel.playerName.collectAsState()
 
+    val savedName by viewModel.playerName.collectAsState()
+    var localName by remember(savedName) { mutableStateOf(savedName) }
+    val topScores by viewModel.topScores.collectAsState()
+    // Best score from leaderboard
+    val bestScore = topScores.maxOfOrNull { it.score } ?: 0
+    val unlockedLevels = viewModel.getUnlockedStartingLevels(bestScore)
     // Animated bouncing mole emoji for the title
     val infiniteTransition = rememberInfiniteTransition(label = "bounce")
     val scale by infiniteTransition.animateFloat(
@@ -65,11 +83,14 @@ fun MenuScreen(
         label = "moleScale"
     )
 
+    var showDifficultyDialog by remember { mutableStateOf(false) }
+    var selectedLevel by remember { mutableStateOf<Int?>(null) }
+
     Column(
         modifier = Modifier
             .fillMaxSize()
             .background(Color(0xFF4CAF50)) // Green background
-            .padding(32.dp),
+            .padding(horizontal = 40.dp, vertical = 60.dp),
         horizontalAlignment = Alignment.CenterHorizontally,
         verticalArrangement = Arrangement.Center
     ) {
@@ -104,8 +125,8 @@ fun MenuScreen(
 
         // Player name input
         OutlinedTextField(
-            value = playerName,
-            onValueChange = { viewModel.setPlayerName(it) },
+            value = localName,
+            onValueChange = { localName = it },
             label = { Text("Player Name", color = Color.White) },
             singleLine = true,
             modifier = Modifier.fillMaxWidth(0.8f),
@@ -114,9 +135,22 @@ fun MenuScreen(
 
         Spacer(modifier = Modifier.height(32.dp))
 
+        // Watch for a selection and only then navigate
+        LaunchedEffect(selectedLevel) {
+            selectedLevel?.let { level ->
+                viewModel.setStartingLevel(level)
+                selectedLevel = null
+                showDifficultyDialog = false
+                onStartGame()
+            }
+        }
+
         // Start Game button
         Button(
-            onClick = onStartGame,
+            onClick = { showDifficultyDialog = true
+                viewModel.setPlayerName(localName)
+//                onStartGame()
+            },
             modifier = Modifier
                 .fillMaxWidth(0.8f)
                 .height(56.dp),
@@ -126,9 +160,69 @@ fun MenuScreen(
             shape = RoundedCornerShape(16.dp)
         ) {
             Text(
-                text = "🎮 Start Game",
+                text = "🎮   Start Game",
                 fontSize = 20.sp,
                 fontWeight = FontWeight.Bold
+            )
+        }
+
+        // Difficulty selection dialog
+        if (showDifficultyDialog) {
+            AlertDialog(
+                onDismissRequest = { showDifficultyDialog = false },
+                containerColor = Color(0xFF37474F),
+                title = {
+                    Text(
+                        text = "Choose Starting Difficulty",
+                        color = Color.White,
+                        fontWeight = FontWeight.Bold
+                    )
+                },
+                text = {
+                    Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                        DifficultyDialogOption(
+                            label = "🐌 Easy",
+                            description = "Start at Level 1",
+                            unlockInfo = "Always unlocked",
+                            isUnlocked = true,
+                            onClick = {
+                                viewModel.setStartingLevel(1)
+                                viewModel.startGameAtLevel(1)
+                                showDifficultyDialog = false
+                                onStartGame()
+                            }
+                        )
+                        DifficultyDialogOption(
+                            label = "🐇 Medium",
+                            description = "Start at Level 3",
+                            unlockInfo = if (3 in unlockedLevels) "Unlocked" else "Reach 1000 points to unlock",
+                            isUnlocked = 3 in unlockedLevels,
+                            onClick = {
+                                if (3 in unlockedLevels) {
+                                    viewModel.setStartingLevel(3)
+                                    viewModel.startGameAtLevel(3)
+                                    showDifficultyDialog = false
+                                    onStartGame()
+                                }
+                            }
+                        )
+                        DifficultyDialogOption(
+                            label = "⚡ Hard",
+                            description = "Start at Level 5",
+                            unlockInfo = if (5 in unlockedLevels) "Unlocked" else "Reach 1700 points to unlock",
+                            isUnlocked = 5 in unlockedLevels,
+                            onClick = {
+                                if (5 in unlockedLevels) {
+                                    viewModel.setStartingLevel(5)
+                                    viewModel.startGameAtLevel(5)
+                                    showDifficultyDialog = false
+                                    onStartGame()
+                                }
+                            }
+                        )
+                    }
+                },
+                confirmButton = {}
             )
         }
 
@@ -146,8 +240,8 @@ fun MenuScreen(
             shape = RoundedCornerShape(16.dp)
         ) {
             Text(
-                text = "🏆 Leaderboard",
-                fontSize = 18.sp
+                text = "🏆   Leaderboard",
+                fontSize = 20.sp
             )
         }
 
@@ -165,9 +259,49 @@ fun MenuScreen(
             shape = RoundedCornerShape(16.dp)
         ) {
             Text(
-                text = "⚙️ Settings",
-                fontSize = 18.sp
+                text = "⚙️   Settings",
+                fontSize = 20.sp
             )
         }
     }
 }
+@Composable
+private fun DifficultyDialogOption(
+    label: String,
+    description: String,
+    unlockInfo: String,
+    isUnlocked: Boolean,
+    onClick: () -> Unit
+) {
+    val alpha = if (isUnlocked) 1f else 0.4f
+
+    Card(
+        modifier = Modifier
+            .fillMaxWidth()
+            .clickable { onClick() },
+        colors = CardDefaults.cardColors(
+            containerColor = Color.White.copy(alpha = 0.1f)
+        ),
+        shape = RoundedCornerShape(12.dp)
+    ) {
+        Row(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(12.dp),
+            horizontalArrangement = Arrangement.SpaceBetween,
+            verticalAlignment = Alignment.CenterVertically
+        ) {
+            Column {
+                Text(text = label, color = Color.White.copy(alpha = alpha),
+                    fontSize = 18.sp, fontWeight = FontWeight.Bold)
+                Text(text = description, color = Color.White.copy(alpha = alpha * 0.7f),
+                    fontSize = 14.sp)
+                Text(text = unlockInfo,
+                    color = if (isUnlocked) Color(0xFF4CAF50) else Color(0xFFF44336),
+                    fontSize = 12.sp)
+            }
+            if (!isUnlocked) Text(text = "🔒", fontSize = 24.sp)
+        }
+    }
+}
+

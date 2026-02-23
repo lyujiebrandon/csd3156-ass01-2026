@@ -35,4 +35,10 @@ interface ScoreDao {
     /** Delete all scores (reset) */
     @Query("DELETE FROM scores")
     suspend fun deleteAllScores()
+
+    @Query("SELECT MAX(score) FROM scores WHERE player_name = :playerName")
+    suspend fun getBestScoreForPlayer(playerName: String): Int?
+
+    @Query("SELECT MAX(score) FROM scores")
+    suspend fun getOverallBestScore(): Int?
 }

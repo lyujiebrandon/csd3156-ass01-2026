@@ -54,7 +54,8 @@ fun GameOverScreen(
     val hits by viewModel.hits.collectAsState()
     val misses by viewModel.misses.collectAsState()
     val playerName by viewModel.playerName.collectAsState()
-    val difficulty by viewModel.difficulty.collectAsState()
+//    val difficulty by viewModel.difficulty.collectAsState()
+    val highestLevel by viewModel.highestLevel.collectAsState()
 
     // Animate the score display appearing
     var showScore by remember { mutableStateOf(false) }
@@ -74,10 +75,11 @@ fun GameOverScreen(
 
     // Determine performance rating
     val rating = when {
-        score >= 300 -> "🏆 Amazing!"
-        score >= 200 -> "🌟 Great!"
-        score >= 100 -> "👍 Good!"
-        score >= 50 -> "🙂 Not Bad!"
+        score >= 2000 -> "🎉 Mastermind!"
+        score >= 1500 -> "🏆 Amazing!"
+        score >= 900 -> "🌟 Great!"
+        score >= 600 -> "👍 Good!"
+        score >= 400 -> "🙂 Not Bad!"
         else -> "💪 Keep Trying!"
     }
 
@@ -142,7 +144,7 @@ fun GameOverScreen(
                     color = Color.White.copy(alpha = 0.6f)
                 )
 
-                Spacer(modifier = Modifier.height(16.dp))
+                Spacer(modifier = Modifier.height(45.dp))
 
                 // Stats grid
                 Row(
@@ -154,10 +156,12 @@ fun GameOverScreen(
                     GameOverStat(label = "Accuracy", value = "$accuracy%", emoji = "🎯")
                 }
 
-                Spacer(modifier = Modifier.height(8.dp))
+                Spacer(modifier = Modifier.height(30.dp))
+
+                val highestLevel by viewModel.highestLevel.collectAsState()
 
                 Text(
-                    text = "Difficulty: $difficulty",
+                    text = "Highest Level Reached: $highestLevel",
                     fontSize = 14.sp,
                     color = Color.White.copy(alpha = 0.5f)
                 )
@@ -168,7 +172,11 @@ fun GameOverScreen(
 
         // Play Again button
         Button(
-            onClick = onPlayAgain,
+            onClick = {
+                viewModel.resetGame() // reset before starting new game
+                viewModel.startGameAtLevel(viewModel.chosenStartingLevel.value)
+                onPlayAgain()
+            },
             modifier = Modifier
                 .fillMaxWidth(0.8f)
                 .height(56.dp),

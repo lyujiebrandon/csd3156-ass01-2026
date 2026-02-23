@@ -16,6 +16,8 @@ import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
+import androidx.compose.material3.Slider
+import androidx.compose.material3.SliderDefaults
 import androidx.compose.material3.Switch
 import androidx.compose.material3.SwitchDefaults
 import androidx.compose.material3.Text
@@ -25,10 +27,12 @@ import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import edu.singaporetech.whackamole.viewmodel.GameViewModel
+import edu.singaporetech.whackamole.WhackAMoleApp
 
 /**
  * Settings Screen - Allows players to configure game preferences.
@@ -47,15 +51,18 @@ fun SettingsScreen(
     viewModel: GameViewModel,
     onBack: () -> Unit
 ) {
-    val soundEnabled by viewModel.soundEnabled.collectAsState()
+//    val soundEnabled by viewModel.soundEnabled.collectAsState()
+    val musicVolume by viewModel.musicVolume.collectAsState()
+    val sfxVolume by viewModel.sfxVolume.collectAsState()
     val vibrationEnabled by viewModel.vibrationEnabled.collectAsState()
-    val difficulty by viewModel.difficulty.collectAsState()
+//    val difficulty by viewModel.difficulty.collectAsState()
+    val soundManager = (LocalContext.current.applicationContext as WhackAMoleApp).soundManager
 
     Column(
         modifier = Modifier
             .fillMaxSize()
             .background(Color(0xFF37474F)) // Dark grey background
-            .padding(16.dp),
+            .padding(horizontal = 40.dp, vertical = 60.dp),
         horizontalAlignment = Alignment.CenterHorizontally
     ) {
         // Title
@@ -67,38 +74,42 @@ fun SettingsScreen(
             modifier = Modifier.padding(vertical = 16.dp)
         )
 
+        Spacer(modifier = Modifier.height(24.dp))
+
         // ==================== Sound Toggle ====================
         SettingsCard {
-            Row(
-                modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.SpaceBetween,
-                verticalAlignment = Alignment.CenterVertically
-            ) {
-                Column {
-                    Text(
-                        text = "🔊 Sound Effects",
-                        color = Color.White,
-                        fontSize = 18.sp,
-                        fontWeight = FontWeight.Medium
+            Column {
+                Text("🎵 Music Volume", color = Color.White, fontSize = 18.sp, fontWeight = FontWeight.Medium)
+                Slider(
+                    value = musicVolume,
+                    onValueChange = {
+                        viewModel.setMusicVolume(it)
+                        soundManager.setMusicVolume(it)
+                    },
+                    colors = SliderDefaults.colors(thumbColor = Color(0xFF4CAF50), activeTrackColor = Color(
+                        0xFF96F398
                     )
-                    Text(
-                        text = "Play sounds on hit and miss",
-                        color = Color.White.copy(alpha = 0.5f),
-                        fontSize = 14.sp
                     )
-                }
-                Switch(
-                    checked = soundEnabled,
-                    onCheckedChange = { viewModel.setSoundEnabled(it) },
-                    colors = SwitchDefaults.colors(
-                        checkedThumbColor = Color(0xFF4CAF50),
-                        checkedTrackColor = Color(0xFF4CAF50).copy(alpha = 0.5f)
+                )
+
+                Spacer(modifier = Modifier.height(24.dp))
+
+                Text("🔊 SFX Volume", color = Color.White, fontSize = 18.sp, fontWeight = FontWeight.Medium)
+                Slider(
+                    value = sfxVolume,
+                    onValueChange = {
+                        viewModel.setSfxVolume(it)
+                        soundManager.setSfxVolume(it)
+                    },
+                    colors = SliderDefaults.colors(thumbColor = Color(0xFF4CAF50), activeTrackColor = Color(
+                        0xFF96F398
+                    )
                     )
                 )
             }
         }
 
-        Spacer(modifier = Modifier.height(12.dp))
+        Spacer(modifier = Modifier.height(20.dp))
 
         // ==================== Vibration Toggle ====================
         SettingsCard {
@@ -131,61 +142,7 @@ fun SettingsScreen(
             }
         }
 
-        Spacer(modifier = Modifier.height(12.dp))
-
-        // ==================== Difficulty Selection ====================
-        SettingsCard {
-            Column {
-                Text(
-                    text = "🎯 Difficulty",
-                    color = Color.White,
-                    fontSize = 18.sp,
-                    fontWeight = FontWeight.Medium
-                )
-
-                Spacer(modifier = Modifier.height(4.dp))
-
-                Text(
-                    text = "How fast the moles appear and disappear",
-                    color = Color.White.copy(alpha = 0.5f),
-                    fontSize = 14.sp
-                )
-
-                Spacer(modifier = Modifier.height(12.dp))
-
-                Row(
-                    modifier = Modifier.fillMaxWidth(),
-                    horizontalArrangement = Arrangement.spacedBy(8.dp)
-                ) {
-                    DifficultyOption(
-                        label = "Easy",
-                        emoji = "🐌",
-                        description = "Slow moles",
-                        isSelected = difficulty == "Easy",
-                        onClick = { viewModel.setDifficulty("Easy") },
-                        modifier = Modifier.weight(1f)
-                    )
-                    DifficultyOption(
-                        label = "Medium",
-                        emoji = "🐇",
-                        description = "Normal speed",
-                        isSelected = difficulty == "Medium",
-                        onClick = { viewModel.setDifficulty("Medium") },
-                        modifier = Modifier.weight(1f)
-                    )
-                    DifficultyOption(
-                        label = "Hard",
-                        emoji = "⚡",
-                        description = "Fast moles",
-                        isSelected = difficulty == "Hard",
-                        onClick = { viewModel.setDifficulty("Hard") },
-                        modifier = Modifier.weight(1f)
-                    )
-                }
-            }
-        }
-
-        Spacer(modifier = Modifier.height(12.dp))
+        Spacer(modifier = Modifier.height(20.dp))
 
         // ==================== Clear Data ====================
         SettingsCard {

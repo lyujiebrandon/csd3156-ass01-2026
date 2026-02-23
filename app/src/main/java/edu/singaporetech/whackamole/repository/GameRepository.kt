@@ -84,6 +84,10 @@ class GameRepository(
         playerDao.updatePlayer(updatedPlayer)
     }
 
+    suspend fun getOverallBestScore(): Int {
+        return scoreDao.getOverallBestScore() ?: 0
+    }
+
     /** Clear all players */
     @WorkerThread
     suspend fun deleteAllPlayers() {

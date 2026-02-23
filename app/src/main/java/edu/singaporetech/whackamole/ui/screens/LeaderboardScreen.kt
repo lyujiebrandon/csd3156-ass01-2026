@@ -56,7 +56,7 @@ fun LeaderboardScreen(
         modifier = Modifier
             .fillMaxSize()
             .background(Color(0xFF1A237E)) // Dark blue background
-            .padding(16.dp),
+            .padding( horizontal = 40.dp, vertical = 60.dp),
         horizontalAlignment = Alignment.CenterHorizontally
     ) {
         // Title

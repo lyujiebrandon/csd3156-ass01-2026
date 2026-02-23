@@ -14,6 +14,7 @@ import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.launch
+import kotlin.math.pow
 
 /**
  * GameViewModel manages all game state and logic.
@@ -41,10 +42,32 @@ class GameViewModel(
         const val GAME_DURATION = 30     // 30 seconds per game
         const val POINTS_PER_HIT = 10    // Points for hitting a mole
         const val COMBO_BONUS = 5        // Extra points per consecutive hit
+        const val HITS_PER_LEVEL = 5         // level up every 5 hits
+        const val BASE_SPEED_MS = 1300L      // level 1 mole visible duration
+        const val SPEED_MULTIPLIER = 0.90f   // each level is 10% faster
+        const val BASE_SPAWN_GAP = 300L      // level 1 spawn gap
     }
 
     // ==================== Game State ====================
 
+    private val _currentLevel = MutableStateFlow(1)
+    val currentLevel: StateFlow<Int> = _currentLevel.asStateFlow()
+
+    private val _hitsThisLevel = MutableStateFlow(0)
+    val hitsThisLevel: StateFlow<Int> = _hitsThisLevel.asStateFlow()
+
+    private val _highestLevel = MutableStateFlow(1)
+    val highestLevel: StateFlow<Int> = _highestLevel.asStateFlow()
+
+    private val _chosenStartingLevel = MutableStateFlow(1)
+    val chosenStartingLevel: StateFlow<Int> = _chosenStartingLevel.asStateFlow()
+
+    // Replace difficulty stateIn with startingLevel
+    val startingLevel = settingsRepository.startingLevel.stateIn(
+        scope = viewModelScope,
+        started = SharingStarted.WhileSubscribed(),
+        initialValue = 1
+    )
     /** Which hole the mole is currently in (-1 = no mole visible) */
     private val _activeMoleIndex = MutableStateFlow(-1)
     val activeMoleIndex: StateFlow<Int> = _activeMoleIndex.asStateFlow()
@@ -83,22 +106,22 @@ class GameViewModel(
 
     // ==================== Settings (from DataStore) ====================
 
-    val soundEnabled = settingsRepository.soundEnabled.stateIn(
+    val musicVolume = settingsRepository.musicVolume.stateIn(
         scope = viewModelScope,
         started = SharingStarted.WhileSubscribed(),
-        initialValue = true
+        initialValue = 0.5f
+    )
+
+    val sfxVolume = settingsRepository.sfxVolume.stateIn(
+        scope = viewModelScope,
+        started = SharingStarted.WhileSubscribed(),
+        initialValue = 0.5f
     )
 
     val vibrationEnabled = settingsRepository.vibrationEnabled.stateIn(
         scope = viewModelScope,
         started = SharingStarted.WhileSubscribed(),
         initialValue = true
-    )
-
-    val difficulty = settingsRepository.difficulty.stateIn(
-        scope = viewModelScope,
-        started = SharingStarted.WhileSubscribed(),
-        initialValue = "Medium"
     )
 
     val playerName = settingsRepository.playerName.stateIn(
@@ -125,40 +148,34 @@ class GameViewModel(
 
     private var gameTimerJob: Job? = null
     private var moleJob: Job? = null
+    private val _playCountdown = MutableStateFlow(false)
+    val playCountdown: StateFlow<Boolean> = _playCountdown.asStateFlow()
 
-    /**
-     * Get mole display duration based on difficulty.
-     * Harder = mole disappears faster.
-     */
+    fun onCountdownPlayed() {
+        _playCountdown.value = false
+    }
+
     private fun getMoleVisibleDuration(): Long {
-        return when (difficulty.value) {
-            "Easy" -> 1500L    // 1.5 seconds
-            "Medium" -> 1000L  // 1.0 seconds
-            "Hard" -> 600L     // 0.6 seconds
-            else -> 1000L
-        }
+        val multiplier = Math.pow(SPEED_MULTIPLIER.toDouble(), (_currentLevel.value - 1).toDouble())
+        return (BASE_SPEED_MS * multiplier).toLong().coerceAtLeast(300L) // floor of 300ms
     }
 
-    /**
-     * Get delay between moles based on difficulty.
-     */
     private fun getMoleSpawnDelay(): Long {
-        return when (difficulty.value) {
-            "Easy" -> 500L     // 0.5 second gap
-            "Medium" -> 300L   // 0.3 second gap
-            "Hard" -> 150L     // 0.15 second gap
-            else -> 300L
-        }
+        val multiplier = SPEED_MULTIPLIER.toDouble().pow((_currentLevel.value - 1).toDouble())
+        return (BASE_SPAWN_GAP * multiplier).toLong().coerceAtLeast(100L) // floor of 100ms
     }
 
+    private fun getPointsForHit(): Int {
+        return 10 + (_currentLevel.value * 2) // higher levels = more points
+    }
     // ==================== Game Actions ====================
 
     /**
      * Start a new game.
      * Resets all state and begins the timer and mole spawning.
      */
-    fun startGame() {
-        // Reset all game state
+    fun startGameAtLevel(level: Int) {
+        _chosenStartingLevel.value = level
         _score.value = 0
         _hits.value = 0
         _misses.value = 0
@@ -166,13 +183,12 @@ class GameViewModel(
         _timeRemaining.value = GAME_DURATION
         _isGameActive.value = true
         _isGameOver.value = false
+        _currentLevel.value = level  // use passed level directly, not startingLevel.value
+        _hitsThisLevel.value = 0
+        _highestLevel.value = level
         _activeMoleIndex.value = -1
         _lastTapWasHit.value = null
-
-        // Start the countdown timer
         startTimer()
-
-        // Start spawning moles
         startMoleSpawning()
     }
 
@@ -188,14 +204,22 @@ class GameViewModel(
             // HIT! Player tapped the mole
             _hits.value++
             _combo.value++
+            _hitsThisLevel.value++
+
+            if (_hitsThisLevel.value >= HITS_PER_LEVEL) {
+                _currentLevel.value++
+                _hitsThisLevel.value = 0
+                if (_currentLevel.value > _highestLevel.value) {
+                    _highestLevel.value = _currentLevel.value
+                }
+            }
 
             // Calculate score: base points + combo bonus
             val comboPoints = (_combo.value - 1) * COMBO_BONUS
-            _score.value += POINTS_PER_HIT + comboPoints
+            _score.value += getPointsForHit() + comboPoints
 
             // Hide the mole immediately after being hit
             _activeMoleIndex.value = -1
-
             _lastTapWasHit.value = true
             true
         } else {
@@ -217,6 +241,10 @@ class GameViewModel(
             while (_timeRemaining.value > 0) {
                 delay(1000L)  // Wait 1 second
                 _timeRemaining.value--
+
+                if (_timeRemaining.value in 1..3) {
+                    _playCountdown.value = true
+                }
             }
             // Time's up! End the game
             endGame()
@@ -271,7 +299,8 @@ class GameViewModel(
             val scoreRecord = Score(
                 playerName = playerName.value,
                 score = _score.value,
-                difficulty = difficulty.value,
+//                difficulty = difficulty.value,
+                difficulty = "Level ${_highestLevel.value}",
                 hits = _hits.value,
                 misses = _misses.value
             )
@@ -287,6 +316,18 @@ class GameViewModel(
         }
     }
 
+    // Add unlock checking
+    fun getUnlockedStartingLevels(bestScore: Int): List<Int> {
+        return buildList {
+            add(1) // Easy - always unlocked
+            if (bestScore >= 1000) add(3)  // Medium
+            if (bestScore >= 1700) add(5) // Hard
+        }
+    }
+
+    fun setStartingLevel(level: Int) = viewModelScope.launch {
+        settingsRepository.setStartingLevel(level)
+    }
     /** Reset the game state back to initial (for returning to menu) */
     fun resetGame() {
         gameTimerJob?.cancel()
@@ -296,21 +337,31 @@ class GameViewModel(
         _activeMoleIndex.value = -1
         _score.value = 0
         _timeRemaining.value = GAME_DURATION
+        _currentLevel.value = 1
+        _hitsThisLevel.value = 0
+        _highestLevel.value = 1
     }
 
     // ==================== Settings Actions ====================
 
-    fun setSoundEnabled(enabled: Boolean) = viewModelScope.launch {
-        settingsRepository.setSoundEnabled(enabled)
+//    fun setSoundEnabled(enabled: Boolean) = viewModelScope.launch {
+//        settingsRepository.setSoundEnabled(enabled)
+//    }
+
+    fun setMusicVolume(volume: Float) = viewModelScope.launch {
+        settingsRepository.setMusicVolume(volume)
     }
 
+    fun setSfxVolume(volume: Float) = viewModelScope.launch {
+        settingsRepository.setSfxVolume(volume)
+    }
     fun setVibrationEnabled(enabled: Boolean) = viewModelScope.launch {
         settingsRepository.setVibrationEnabled(enabled)
     }
 
-    fun setDifficulty(difficulty: String) = viewModelScope.launch {
-        settingsRepository.setDifficulty(difficulty)
-    }
+//    fun setDifficulty(difficulty: String) = viewModelScope.launch {
+//        settingsRepository.setDifficulty(difficulty)
+//    }
 
     fun setPlayerName(name: String) = viewModelScope.launch {
         settingsRepository.setPlayerName(name)
