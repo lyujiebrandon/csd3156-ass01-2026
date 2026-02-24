@@ -84,6 +84,10 @@ fun GameScreen(
     val currentLevel by viewModel.currentLevel.collectAsState()
     val hitsThisLevel by viewModel.hitsThisLevel.collectAsState()
     var gameStarted by remember { mutableStateOf(false) }
+    val isCountingDown by viewModel.isCountingDown.collectAsState()
+    val countdownValue by viewModel.countdownValue.collectAsState()
+    val playCountdownSound by viewModel.playCountdownSound.collectAsState()
+    val gameId by viewModel.gameId.collectAsState()
 
     // Start the game when this screen appears
     LaunchedEffect(Unit) {
@@ -92,89 +96,122 @@ fun GameScreen(
     }
 
     // Navigate to game over screen when game ends
-    LaunchedEffect(isGameOver) {
+    LaunchedEffect(gameId, isGameOver) {
         if (isGameOver && gameStarted) {
             if (sfxVolume > 0f) soundManager.playGameOver()
             onGameOver()
         }
     }
 
-    Column(
-        modifier = Modifier
-            .fillMaxSize()
-            .background(Color(0xFF9AB678)) // Light green background
-            .padding(20.dp),
-        horizontalAlignment = Alignment.CenterHorizontally,
-        verticalArrangement = Arrangement.Center
-    ) {
-        // ==================== Top Bar: Score & Timer ====================
-        ScoreAndTimerBar(score = score, timeRemaining = timeRemaining, combo = combo)
-
-        Spacer(modifier = Modifier.height(8.dp))
-
-        // Timer progress bar
-        LinearProgressIndicator(
-            progress = { timeRemaining.toFloat() / GameViewModel.GAME_DURATION.toFloat() },
-            modifier = Modifier
-                .fillMaxWidth()
-                .height(8.dp)
-                .clip(RoundedCornerShape(4.dp)),
-            color = when {
-                timeRemaining <= 5 -> Color.Red
-                timeRemaining <= 10 -> Color(0xFFFF9800)
-                else -> Color(0xFF4CAF50)
-            },
-            trackColor = Color.White.copy(alpha = 0.3f)
-        )
-
-        Spacer(modifier = Modifier.height(8.dp))
-
-        Row(
-            modifier = Modifier.fillMaxWidth(),
-            horizontalArrangement = Arrangement.SpaceBetween
-        ) {
-            Text(
-                text = "Level $currentLevel",
-                color = Color.White,
-                fontSize = 16.sp,
-                fontWeight = FontWeight.Bold
-            )
-            Text(
-                text = "Next level: $hitsThisLevel/${GameViewModel.HITS_PER_LEVEL} hits",
-                color = Color.White.copy(alpha = 0.7f),
-                fontSize = 14.sp
-            )
+    LaunchedEffect(gameId) {
+        if (sfxVolume > 0f) {
+            soundManager.playCountdown()
         }
-        Spacer(modifier = Modifier.height(16.dp))
+    }
 
-        // ==================== 3x3 Mole Grid ====================
-        MoleGrid(
-            activeMoleIndex = activeMoleIndex,
-            soundEnabled = sfxVolume > 0f,
-            vibrationEnabled = vibrationEnabled,
-            context = context,
-            soundManager = soundManager,
-            onHoleTapped = { index ->
-                viewModel.onHoleTapped(index)
-            }
-        )
-
-        Spacer(modifier = Modifier.height(16.dp))
-
-        // ==================== Stats Bar ====================
-        Row(
-            modifier = Modifier.fillMaxWidth(),
-            horizontalArrangement = Arrangement.SpaceEvenly
+    Box(modifier = Modifier
+        .fillMaxSize()
+        .background(Color(0xFF83986A))
+    ){
+        Column(
+            modifier = Modifier
+                .fillMaxSize()
+//                .background(Color(0xFF9AB678)) // Light green background
+                .padding(20.dp),
+            horizontalAlignment = Alignment.CenterHorizontally,
+            verticalArrangement = Arrangement.Center
         ) {
-            StatItem(label = "Hits", value = hits.toString(), color = Color(0xFF4CAF50))
-            StatItem(label = "Misses", value = misses.toString(), color = Color(0xFFF44336))
-            StatItem(
-                label = "Accuracy",
-                value = if (hits + misses > 0) {
-                    "${(hits * 100 / (hits + misses))}%"
-                } else "0%",
-                color = Color(0xFF2196F3)
+            // ==================== Top Bar: Score & Timer ====================
+            ScoreAndTimerBar(score = score, timeRemaining = timeRemaining, combo = combo)
+
+            Spacer(modifier = Modifier.height(8.dp))
+
+            // Timer progress bar
+            LinearProgressIndicator(
+                progress = { timeRemaining.toFloat() / GameViewModel.GAME_DURATION.toFloat() },
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .height(8.dp)
+                    .clip(RoundedCornerShape(4.dp)),
+                color = when {
+                    timeRemaining <= 5 -> Color.Red
+                    timeRemaining <= 10 -> Color(0xFFFF9800)
+                    else -> Color(0xFF39913D)
+                },
+                trackColor = Color.White.copy(alpha = 0.3f)
             )
+
+            Spacer(modifier = Modifier.height(8.dp))
+
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.SpaceBetween
+            ) {
+                Text(
+                    text = "Level $currentLevel",
+                    color = Color.White,
+                    fontSize = 16.sp,
+                    fontWeight = FontWeight.Bold
+                )
+                Text(
+                    text = "Next level: $hitsThisLevel/${GameViewModel.HITS_PER_LEVEL} hits",
+                    color = Color.White.copy(alpha = 0.7f),
+                    fontSize = 14.sp
+                )
+            }
+            Spacer(modifier = Modifier.height(16.dp))
+
+            // ==================== 3x3 Mole Grid ====================
+            MoleGrid(
+                activeMoleIndex = activeMoleIndex,
+                soundEnabled = sfxVolume > 0f,
+                vibrationEnabled = vibrationEnabled,
+                context = context,
+                soundManager = soundManager,
+                onHoleTapped = { index ->
+                    viewModel.onHoleTapped(index)
+                }
+            )
+
+            Spacer(modifier = Modifier.height(16.dp))
+
+            // ==================== Stats Bar ====================
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.SpaceEvenly
+            ) {
+                StatItem(label = "Hits", value = hits.toString(), color = Color(0xFF39913D))
+                StatItem(label = "Misses", value = misses.toString(), color = Color(0xFFB93329))
+                StatItem(
+                    label = "Accuracy",
+                    value = if (hits + misses > 0) {
+                        "${(hits * 100 / (hits + misses))}%"
+                    } else "0%",
+                    color = Color(0xFF0A62A8)
+                )
+            }
+        }
+        if (isCountingDown) {
+            Box(
+                modifier = Modifier
+                    .fillMaxSize()
+                    .background(Color.Black.copy(alpha = 0.6f)),
+                contentAlignment = Alignment.Center
+            ) {
+                Column(horizontalAlignment = Alignment.CenterHorizontally) {
+                    Text(
+                        text = when (countdownValue) {
+                            3 -> "3"
+                            2 -> "2"
+                            1 -> "1"
+                            else -> "GO!"
+                        },
+                        fontSize = 120.sp,
+                        fontWeight = FontWeight.Bold,
+                        color = Color(0xFFFFEB3B)
+                    )
+                }
+            }
         }
     }
 }

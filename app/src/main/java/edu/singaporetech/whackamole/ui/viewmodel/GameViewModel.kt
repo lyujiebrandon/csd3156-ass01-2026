@@ -48,6 +48,11 @@ class GameViewModel(
         const val BASE_SPAWN_GAP = 300L      // level 1 spawn gap
     }
 
+    private val _countdownValue = MutableStateFlow(3)
+    val countdownValue: StateFlow<Int> = _countdownValue.asStateFlow()
+
+    private val _isCountingDown = MutableStateFlow(false)
+    val isCountingDown: StateFlow<Boolean> = _isCountingDown.asStateFlow()
     // ==================== Game State ====================
 
     private val _currentLevel = MutableStateFlow(1)
@@ -104,6 +109,8 @@ class GameViewModel(
     private val _lastTapWasHit = MutableStateFlow<Boolean?>(null)
     val lastTapWasHit: StateFlow<Boolean?> = _lastTapWasHit.asStateFlow()
 
+    private val _gameId = MutableStateFlow(0)
+    val gameId: StateFlow<Int> = _gameId.asStateFlow()
     // ==================== Settings (from DataStore) ====================
 
     val musicVolume = settingsRepository.musicVolume.stateIn(
@@ -149,10 +156,12 @@ class GameViewModel(
     private var gameTimerJob: Job? = null
     private var moleJob: Job? = null
     private val _playCountdown = MutableStateFlow(false)
-    val playCountdown: StateFlow<Boolean> = _playCountdown.asStateFlow()
 
-    fun onCountdownPlayed() {
-        _playCountdown.value = false
+    private val _playCountdownSound = MutableStateFlow(false)
+    val playCountdownSound: StateFlow<Boolean> = _playCountdownSound.asStateFlow()
+
+    fun onCountdownSoundPlayed() {
+        _playCountdownSound.value = false
     }
 
     private fun getMoleVisibleDuration(): Long {
@@ -175,21 +184,38 @@ class GameViewModel(
      * Resets all state and begins the timer and mole spawning.
      */
     fun startGameAtLevel(level: Int) {
+        _gameId.value++
         _chosenStartingLevel.value = level
         _score.value = 0
         _hits.value = 0
         _misses.value = 0
         _combo.value = 0
         _timeRemaining.value = GAME_DURATION
-        _isGameActive.value = true
+        _isGameActive.value = false
         _isGameOver.value = false
         _currentLevel.value = level  // use passed level directly, not startingLevel.value
         _hitsThisLevel.value = 0
         _highestLevel.value = level
         _activeMoleIndex.value = -1
         _lastTapWasHit.value = null
-        startTimer()
-        startMoleSpawning()
+        _isCountingDown.value = true
+
+        // cancel any leftover jobs from previous game
+        gameTimerJob?.cancel()
+        moleJob?.cancel()
+
+        viewModelScope.launch {
+            for (i in 3 downTo 1) {
+                _countdownValue.value = i
+                delay(1000L)
+            }
+            _countdownValue.value = 0  // triggers "GO!" text
+            delay(700L)                // show GO! for half a second
+            _isCountingDown.value = false
+            _isGameActive.value = true
+            startTimer()
+            startMoleSpawning()
+        }
     }
 
     /**
@@ -274,6 +300,8 @@ class GameViewModel(
                 // If mole wasn't hit, hide it (it may already be -1 if hit)
                 if (_activeMoleIndex.value == newIndex) {
                     _activeMoleIndex.value = -1
+                    _misses.value++
+                    _combo.value = 0  // Reset combo on miss
                 }
 
                 // Small delay before next mole appears
