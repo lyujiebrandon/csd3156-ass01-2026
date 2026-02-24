@@ -5,6 +5,8 @@ import androidx.room.Entity
 import androidx.room.PrimaryKey
 
 /**
+ * Author: Ryan Heng Hao Tian
+ *
  * Score entity representing a single game score record.
  * This is one of the multiple tables in our Room database.
  *

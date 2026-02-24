@@ -34,6 +34,7 @@ import java.util.Date
 import java.util.Locale
 
 /**
+ * Author: Ong Angie
  * Leaderboard Screen - Displays top 10 scores from the Room database.
  *
  * Shows:

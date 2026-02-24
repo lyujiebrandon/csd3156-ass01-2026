@@ -47,6 +47,8 @@ import edu.singaporetech.whackamole.WhackAMoleApp
 import edu.singaporetech.whackamole.viewmodel.GameViewModel
 
 /**
+ * Author: Hong Xian Xiang
+ *
  * Main Menu Screen - the first screen the player sees.
  *
  * Features:
@@ -63,16 +65,12 @@ fun MenuScreen(
     onLeaderboard: () -> Unit,
     onSettings: () -> Unit
 ) {
-//    val playerName by viewModel.playerName.collectAsState()
 
     val savedName by viewModel.playerName.collectAsState()
-    var localName by remember(savedName) { mutableStateOf(savedName) }
     val topScores by viewModel.topScores.collectAsState()
-    // Best score from leaderboard
-    val bestScore = topScores.maxOfOrNull { it.score } ?: 0
+    val bestScore = topScores.maxOfOrNull { it.score } ?: 0     // Best score from leaderboard
     val unlockedLevels = viewModel.getUnlockedStartingLevels(bestScore)
-    // Animated bouncing mole emoji for the title
-    val infiniteTransition = rememberInfiniteTransition(label = "bounce")
+    val infiniteTransition = rememberInfiniteTransition(label = "bounce")     // Animated bouncing mole emoji for the title
     val scale by infiniteTransition.animateFloat(
         initialValue = 1f,
         targetValue = 1.2f,
@@ -83,6 +81,7 @@ fun MenuScreen(
         label = "moleScale"
     )
 
+    var localName by remember(savedName) { mutableStateOf(savedName) }
     var showDifficultyDialog by remember { mutableStateOf(false) }
     var selectedLevel by remember { mutableStateOf<Int?>(null) }
 
@@ -149,7 +148,6 @@ fun MenuScreen(
         Button(
             onClick = { showDifficultyDialog = true
                 viewModel.setPlayerName(localName)
-//                onStartGame()
             },
             modifier = Modifier
                 .fillMaxWidth(0.8f)
@@ -228,7 +226,7 @@ fun MenuScreen(
 
         Spacer(modifier = Modifier.height(16.dp))
 
-        // Leaderboard button
+        // ==================== Leaderboard ====================
         Button(
             onClick = onLeaderboard,
             modifier = Modifier
@@ -247,7 +245,7 @@ fun MenuScreen(
 
         Spacer(modifier = Modifier.height(16.dp))
 
-        // Settings button
+        // ======================== Settings button ========================
         Button(
             onClick = onSettings,
             modifier = Modifier
@@ -265,6 +263,10 @@ fun MenuScreen(
         }
     }
 }
+
+/**
+ * Difficulty selection option in the difficulty selection dialog.
+ */
 @Composable
 private fun DifficultyDialogOption(
     label: String,
@@ -275,6 +277,7 @@ private fun DifficultyDialogOption(
 ) {
     val alpha = if (isUnlocked) 1f else 0.4f
 
+    // Card for each difficulty option
     Card(
         modifier = Modifier
             .fillMaxWidth()

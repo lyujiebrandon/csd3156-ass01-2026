@@ -36,13 +36,21 @@ import androidx.compose.ui.unit.sp
 import edu.singaporetech.whackamole.viewmodel.GameViewModel
 
 /**
- * Game Over Screen - Displayed after the timer runs out.
+ * Author: Hong Xian Xiang, Reagan Tang Rui Feng
  *
+ * Game Screen - The main gameplay area.
+ *
+ * Game Over Screen - Displayed after the timer runs out.
  * Shows:
  * - Final score with animation
  * - Game statistics (hits, misses, accuracy, max combo)
  * - Play Again button
  * - Back to Menu button
+ *
+ * Utilises:
+ * @param viewModel GameViewModel instance for data access
+ * @param onPlayAgain Callback to restart the game
+ * @param onBackToMenu Callback to navigate back to the menu
  */
 @Composable
 fun GameOverScreen(
@@ -54,8 +62,6 @@ fun GameOverScreen(
     val hits by viewModel.hits.collectAsState()
     val misses by viewModel.misses.collectAsState()
     val playerName by viewModel.playerName.collectAsState()
-//    val difficulty by viewModel.difficulty.collectAsState()
-    val highestLevel by viewModel.highestLevel.collectAsState()
 
     // Animate the score display appearing
     var showScore by remember { mutableStateOf(false) }

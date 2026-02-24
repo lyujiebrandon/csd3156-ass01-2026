@@ -6,22 +6,25 @@ import android.media.SoundPool
 import android.media.MediaPlayer
 
 /**
- * SoundManager handles all sound effects for the game.
- * Uses SoundPool which is optimized for short sound clips.
+ *  Author      : Reagan Tang Rui Feng
+ *  Description:
+ *  SoundManager is responsible for handling all audio
+ *  playback within the game. It manages:
+ *  - Short sound effects using SoundPool
+ *  - Background music using MediaPlayer
+ *  - Volume control for music and sound effects
+ *  - Switching between menu and in-game music
  *
- * This satisfies the "Multimedia" advanced feature requirement.
+ *  Audio Files Location:
+ *  - res/raw/countdown.mp3   (3-2-1 countdown beep)
+ *  - res/raw/game_music.mp3  (in-game music)
+ *  - res/raw/game_over.mp3   (when the game ends)
+ *  - res/raw/hit.mp3         (when player hits a mole)
+ *  - res/raw/menu_music.mp3  (menu music)
+ *  - res/raw/miss.mp3        (when player misses / taps empty hole)
  *
- *  Audio and Sound Effects files can be found in the res/raw/ folder:
- * - res/raw/countdown.mp3 (3-2-1 countdown beep)
- * - res/raw/game_music.mp3 (in-game music)
- * - res/raw/game_over.mp3 (when the game ends)
- * - res/raw/hit.mp3       (when player hits a mole)
- * - res/raw/menu_music.mp3 (menu music)
- * - res/raw/miss.mp3      (when player misses / taps empty hole)
- *
- * You can find free sound effects at:
- * - https://freesound.org
- * - https://mixkit.co/free-sound-effects/
+ *  Audio sources obtained from:
+ *  https://pixabay.com
  */
 class SoundManager(context: Context) {
 
@@ -38,7 +41,10 @@ class SoundManager(context: Context) {
     private var musicVolume: Float = 0.5f
 
     init {
-        // Configure audio attributes for game sounds
+        /**
+         * Initializes SoundPool with game-appropriate audio attributes
+         * and loads all sound effect resources from res/raw/.
+         */
         val audioAttributes = AudioAttributes.Builder()
             .setUsage(AudioAttributes.USAGE_GAME)
             .setContentType(AudioAttributes.CONTENT_TYPE_SONIFICATION)
@@ -51,7 +57,6 @@ class SoundManager(context: Context) {
             .build()
 
         // Load sound files from res/raw/
-        // NOTE: Make sure these files exist in your res/raw/ folder
         try {
             hitSoundId = soundPool.load(context, getResourceId(context, "hit"), 1)
             missSoundId = soundPool.load(context, getResourceId(context, "miss"), 1)
@@ -76,16 +81,22 @@ class SoundManager(context: Context) {
         isEnabled = enabled
     }
 
+    /** Sets Game & Menu BGM */
     fun setMusicVolume(volume: Float) {
         musicVolume = volume
         menuMusic?.setVolume(volume, volume)
         gameMusic?.setVolume(volume, volume)
     }
 
+    /** Sets in-game SFX volume */
     fun setSfxVolume(volume: Float) {
         sfxVolume = volume
     }
 
+    /**
+     * Sets music based on game state
+     * Game -> Other states
+     * */
     fun switchToMenuMusic(context: Context) {
         if (currentTrack == "menu" && menuMusic?.isPlaying == true) return // tighten the guard
         currentTrack = "menu"
@@ -101,6 +112,10 @@ class SoundManager(context: Context) {
         }
     }
 
+    /**
+     * Sets music based on game state
+     * Menu -> Game
+     */
     fun switchToGameMusic(context: Context) {
         if (currentTrack == "game" && gameMusic?.isPlaying == true) return // tighten the guard
         currentTrack = "game"
@@ -140,6 +155,7 @@ class SoundManager(context: Context) {
             soundPool.play(countdownSoundId, sfxVolume, sfxVolume, 1, 0, 1f)
     }
 
+    /** Stops all music and releases resources. */
     fun stopAllMusic() {
         currentTrack = null
         menuMusic?.stop()

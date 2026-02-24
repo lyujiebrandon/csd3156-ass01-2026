@@ -11,6 +11,7 @@ import kotlinx.coroutines.flow.map
 import androidx.datastore.preferences.core.intPreferencesKey
 
 /**
+ * Author: Ryan Heng Hao Tian, Reagan Tang Rui Feng, Ong Angie
  * Repository for managing app settings using Preferences DataStore.
  *
  * DataStore is used instead of SharedPreferences because:
@@ -67,14 +68,6 @@ class SettingsRepository(private val dataStore: DataStore<Preferences>) {
     }
 
     // ==================== Write Settings ====================
-
-    /** Toggle sound on/off */
-//    suspend fun setSoundEnabled(enabled: Boolean) {
-//        dataStore.edit { preferences ->
-//            preferences[SOUND_ENABLED] = enabled
-//        }
-//    }
-
     suspend fun setMusicVolume(volume: Float) {
         dataStore.edit { it[MUSIC_VOLUME] = volume }
     }
@@ -89,13 +82,6 @@ class SettingsRepository(private val dataStore: DataStore<Preferences>) {
             preferences[VIBRATION_ENABLED] = enabled
         }
     }
-
-    /** Set difficulty level */
-//    suspend fun setDifficulty(difficulty: String) {
-//        dataStore.edit { preferences ->
-//            preferences[STARTING_LEVEL] = difficulty
-//        }
-//    }
 
     /** Save player name */
     suspend fun setPlayerName(name: String) {

@@ -5,6 +5,8 @@ import androidx.room.Entity
 import androidx.room.PrimaryKey
 
 /**
+ * Author: Ryan Heng Hao Tian
+ *
  * Player entity representing a player profile with cumulative stats.
  * This is the second table in our Room database (multiple tables requirement).
  *

@@ -17,6 +17,7 @@ import kotlinx.coroutines.launch
 import kotlin.math.pow
 
 /**
+ * Author: Lee Yu Jie Brandon
  * GameViewModel manages all game state and logic.
  *
  * Game Flow:
@@ -48,31 +49,31 @@ class GameViewModel(
         const val BASE_SPAWN_GAP = 300L      // level 1 spawn gap
     }
 
+    // ==================== Game State ====================
+    /** Countdown value for game start */
     private val _countdownValue = MutableStateFlow(3)
     val countdownValue: StateFlow<Int> = _countdownValue.asStateFlow()
 
+    /** Whether the countdown is currently running */
     private val _isCountingDown = MutableStateFlow(false)
     val isCountingDown: StateFlow<Boolean> = _isCountingDown.asStateFlow()
-    // ==================== Game State ====================
 
+    /** Current level  */
     private val _currentLevel = MutableStateFlow(1)
     val currentLevel: StateFlow<Int> = _currentLevel.asStateFlow()
 
+    /** Number of hits in this level */
     private val _hitsThisLevel = MutableStateFlow(0)
     val hitsThisLevel: StateFlow<Int> = _hitsThisLevel.asStateFlow()
 
+    /** Highest level reached */
     private val _highestLevel = MutableStateFlow(1)
     val highestLevel: StateFlow<Int> = _highestLevel.asStateFlow()
 
+    /** Starting level chosen by player */
     private val _chosenStartingLevel = MutableStateFlow(1)
     val chosenStartingLevel: StateFlow<Int> = _chosenStartingLevel.asStateFlow()
 
-    // Replace difficulty stateIn with startingLevel
-    val startingLevel = settingsRepository.startingLevel.stateIn(
-        scope = viewModelScope,
-        started = SharingStarted.WhileSubscribed(),
-        initialValue = 1
-    )
     /** Which hole the mole is currently in (-1 = no mole visible) */
     private val _activeMoleIndex = MutableStateFlow(-1)
     val activeMoleIndex: StateFlow<Int> = _activeMoleIndex.asStateFlow()
@@ -109,10 +110,11 @@ class GameViewModel(
     private val _lastTapWasHit = MutableStateFlow<Boolean?>(null)
     val lastTapWasHit: StateFlow<Boolean?> = _lastTapWasHit.asStateFlow()
 
+    /** Unique game ID for this session */
     private val _gameId = MutableStateFlow(0)
     val gameId: StateFlow<Int> = _gameId.asStateFlow()
-    // ==================== Settings (from DataStore) ====================
 
+    // ==================== Settings (from DataStore) ====================
     val musicVolume = settingsRepository.musicVolume.stateIn(
         scope = viewModelScope,
         started = SharingStarted.WhileSubscribed(),
@@ -177,8 +179,8 @@ class GameViewModel(
     private fun getPointsForHit(): Int {
         return 10 + (_currentLevel.value * 2) // higher levels = more points
     }
-    // ==================== Game Actions ====================
 
+    // ==================== Game Actions ====================
     /**
      * Start a new game.
      * Resets all state and begins the timer and mole spawning.
@@ -371,11 +373,6 @@ class GameViewModel(
     }
 
     // ==================== Settings Actions ====================
-
-//    fun setSoundEnabled(enabled: Boolean) = viewModelScope.launch {
-//        settingsRepository.setSoundEnabled(enabled)
-//    }
-
     fun setMusicVolume(volume: Float) = viewModelScope.launch {
         settingsRepository.setMusicVolume(volume)
     }
@@ -387,16 +384,11 @@ class GameViewModel(
         settingsRepository.setVibrationEnabled(enabled)
     }
 
-//    fun setDifficulty(difficulty: String) = viewModelScope.launch {
-//        settingsRepository.setDifficulty(difficulty)
-//    }
-
     fun setPlayerName(name: String) = viewModelScope.launch {
         settingsRepository.setPlayerName(name)
     }
 
     // ==================== Leaderboard Actions ====================
-
     fun clearAllScores() = viewModelScope.launch {
         gameRepository.deleteAllScores()
     }

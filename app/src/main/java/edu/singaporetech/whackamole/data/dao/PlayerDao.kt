@@ -9,8 +9,14 @@ import edu.singaporetech.whackamole.data.entity.Player
 import kotlinx.coroutines.flow.Flow
 
 /**
- * Data Access Object for the players table.
- * Provides methods to manage player profiles and their cumulative stats.
+ * Author: Ryan Heng Hao Tian
+ *
+ * Description:
+ * Room Data Access Object for the players table.
+ * Provides methods to insert, query, and delete player records.
+ * Handles CRUD operations for the players table.
+ *
+ * Flow return types automatically notify observers when data changes.
  */
 @Dao
 interface PlayerDao {
@@ -31,7 +37,7 @@ interface PlayerDao {
     @Update
     suspend fun updatePlayer(player: Player)
 
-    /** Delete all players (reset) */
+    /** Delete all player records (for reset function) */
     @Query("DELETE FROM players")
     suspend fun deleteAllPlayers()
 }

@@ -51,12 +51,13 @@ import edu.singaporetech.whackamole.WhackAMoleApp
 import edu.singaporetech.whackamole.viewmodel.GameViewModel
 
 /**
+ * Author: Hong Xian Xiang, Reagan Tang Rui Feng
  * Game Screen - The main gameplay area.
  *
  * Layout:
- * - Top: Score and Timer display
- * - Middle: 3x3 grid of mole holes
- * - Bottom: Combo indicator
+ * - Top: Score, Timer and Combo display
+ * - Middle: 3x3 grid of mole holes, game area
+ * - Bottom: Stats display for Hits, Misses, Accuracy
  *
  * Features:
  * - Animated mole pop-up/down (Animation feature)
@@ -75,10 +76,8 @@ fun GameScreen(
     val combo by viewModel.combo.collectAsState()
     val hits by viewModel.hits.collectAsState()
     val misses by viewModel.misses.collectAsState()
-//    val soundEnabled by viewModel.soundEnabled.collectAsState()
     val sfxVolume by viewModel.sfxVolume.collectAsState()
     val vibrationEnabled by viewModel.vibrationEnabled.collectAsState()
-//    val difficulty by viewModel.difficulty.collectAsState()
     val context = LocalContext.current
     val soundManager = (context.applicationContext as WhackAMoleApp).soundManager
     val currentLevel by viewModel.currentLevel.collectAsState()
@@ -86,7 +85,6 @@ fun GameScreen(
     var gameStarted by remember { mutableStateOf(false) }
     val isCountingDown by viewModel.isCountingDown.collectAsState()
     val countdownValue by viewModel.countdownValue.collectAsState()
-    val playCountdownSound by viewModel.playCountdownSound.collectAsState()
     val gameId by viewModel.gameId.collectAsState()
 
     // Start the game when this screen appears
@@ -103,6 +101,7 @@ fun GameScreen(
         }
     }
 
+    // Play countdown sound when countdown starts
     LaunchedEffect(gameId) {
         if (sfxVolume > 0f) {
             soundManager.playCountdown()
@@ -126,7 +125,7 @@ fun GameScreen(
 
             Spacer(modifier = Modifier.height(8.dp))
 
-            // Timer progress bar
+            // ==================== Timer progress bar ====================
             LinearProgressIndicator(
                 progress = { timeRemaining.toFloat() / GameViewModel.GAME_DURATION.toFloat() },
                 modifier = Modifier
@@ -143,6 +142,7 @@ fun GameScreen(
 
             Spacer(modifier = Modifier.height(8.dp))
 
+            // ==================== Level display ====================
             Row(
                 modifier = Modifier.fillMaxWidth(),
                 horizontalArrangement = Arrangement.SpaceBetween
@@ -191,6 +191,8 @@ fun GameScreen(
                 )
             }
         }
+
+        // ==================== Countdown ====================
         if (isCountingDown) {
             Box(
                 modifier = Modifier
@@ -217,7 +219,7 @@ fun GameScreen(
 }
 
 /**
- * Score and Timer display bar at the top of the game screen.
+ * Score, Timer and Combo display bar at the top of the game screen.
  */
 @Composable
 private fun ScoreAndTimerBar(score: Int, timeRemaining: Int, combo: Int) {
@@ -232,7 +234,7 @@ private fun ScoreAndTimerBar(score: Int, timeRemaining: Int, combo: Int) {
         horizontalArrangement = Arrangement.SpaceBetween,
         verticalAlignment = Alignment.CenterVertically
     ) {
-        // Score
+        // ==================== Score ====================
         Column(horizontalAlignment = Alignment.CenterHorizontally) {
             Text(
                 text = "Score",
@@ -247,7 +249,7 @@ private fun ScoreAndTimerBar(score: Int, timeRemaining: Int, combo: Int) {
             )
         }
 
-        // Combo
+        // ==================== Combo ====================
         if (combo > 1) {
             Text(
                 text = "🔥 x$combo",
@@ -257,7 +259,7 @@ private fun ScoreAndTimerBar(score: Int, timeRemaining: Int, combo: Int) {
             )
         }
 
-        // Timer
+        // ==================== Timer ====================
         Column(horizontalAlignment = Alignment.CenterHorizontally) {
             Text(
                 text = "Time",

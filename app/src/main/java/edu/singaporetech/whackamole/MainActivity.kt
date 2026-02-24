@@ -29,6 +29,7 @@ import edu.singaporetech.whackamole.viewmodel.GameViewModel
 import edu.singaporetech.whackamole.viewmodel.GameViewModelFactory
 
 /**
+ * Author: Lee Yu Jie Brandon, Ong Angie
  * MainActivity - Entry point of the Whack-a-Mole game.
  *
  * Uses Jetpack Navigation Compose for screen navigation.

@@ -8,6 +8,7 @@ import edu.singaporetech.whackamole.data.entity.Score
 import kotlinx.coroutines.flow.Flow
 
 /**
+ * Author: Ryan Heng Hao Tian
  * Data Access Object for the scores table.
  * Provides methods to insert, query, and delete score records.
  *

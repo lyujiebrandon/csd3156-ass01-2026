@@ -35,6 +35,8 @@ import edu.singaporetech.whackamole.viewmodel.GameViewModel
 import edu.singaporetech.whackamole.WhackAMoleApp
 
 /**
+ * Author: Ong Angie, Reagan Tang Rui Feng
+ *
  * Settings Screen - Allows players to configure game preferences.
  *
  * All settings are saved to Preferences DataStore, so they persist
@@ -51,13 +53,14 @@ fun SettingsScreen(
     viewModel: GameViewModel,
     onBack: () -> Unit
 ) {
-//    val soundEnabled by viewModel.soundEnabled.collectAsState()
     val musicVolume by viewModel.musicVolume.collectAsState()
     val sfxVolume by viewModel.sfxVolume.collectAsState()
     val vibrationEnabled by viewModel.vibrationEnabled.collectAsState()
-//    val difficulty by viewModel.difficulty.collectAsState()
     val soundManager = (LocalContext.current.applicationContext as WhackAMoleApp).soundManager
 
+    /**
+     * Settings screen layout.
+     */
     Column(
         modifier = Modifier
             .fillMaxSize()
@@ -65,7 +68,7 @@ fun SettingsScreen(
             .padding(horizontal = 40.dp, vertical = 60.dp),
         horizontalAlignment = Alignment.CenterHorizontally
     ) {
-        // Title
+        // ======================== Title ========================
         Text(
             text = "⚙️ Settings",
             fontSize = 32.sp,
@@ -76,7 +79,7 @@ fun SettingsScreen(
 
         Spacer(modifier = Modifier.height(24.dp))
 
-        // ==================== Sound Toggle ====================
+        // ==================== Volume Sliders ====================
         SettingsCard {
             Column {
                 Text("🎵 Music Volume", color = Color.White, fontSize = 18.sp, fontWeight = FontWeight.Medium)
@@ -178,7 +181,7 @@ fun SettingsScreen(
 
         Spacer(modifier = Modifier.weight(1f))
 
-        // Back button
+        // ======================== Back button ========================
         Button(
             onClick = onBack,
             modifier = Modifier
@@ -216,55 +219,3 @@ private fun SettingsCard(content: @Composable () -> Unit) {
     }
 }
 
-/**
- * Difficulty selection button.
- */
-@Composable
-private fun DifficultyOption(
-    label: String,
-    emoji: String,
-    description: String,
-    isSelected: Boolean,
-    onClick: () -> Unit,
-    modifier: Modifier = Modifier
-) {
-    val backgroundColor = if (isSelected) {
-        Color(0xFF4CAF50).copy(alpha = 0.3f)
-    } else {
-        Color.White.copy(alpha = 0.05f)
-    }
-
-    val borderColor = if (isSelected) {
-        Color(0xFF4CAF50)
-    } else {
-        Color.Transparent
-    }
-
-    Card(
-        modifier = modifier
-            .border(2.dp, borderColor, RoundedCornerShape(12.dp))
-            .clickable { onClick() },
-        colors = CardDefaults.cardColors(containerColor = backgroundColor),
-        shape = RoundedCornerShape(12.dp)
-    ) {
-        Column(
-            modifier = Modifier
-                .fillMaxWidth()
-                .padding(12.dp),
-            horizontalAlignment = Alignment.CenterHorizontally
-        ) {
-            Text(text = emoji, fontSize = 24.sp)
-            Text(
-                text = label,
-                color = Color.White,
-                fontSize = 14.sp,
-                fontWeight = FontWeight.Bold
-            )
-            Text(
-                text = description,
-                color = Color.White.copy(alpha = 0.5f),
-                fontSize = 10.sp
-            )
-        }
-    }
-}

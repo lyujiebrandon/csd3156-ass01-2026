@@ -10,6 +10,7 @@ import edu.singaporetech.whackamole.data.entity.Player
 import edu.singaporetech.whackamole.data.entity.Score
 
 /**
+ * Author: Ryan Heng Hao Tian
  * Room database for the Whack-a-Mole game.
  *
  * Contains two tables:

@@ -8,6 +8,7 @@ import edu.singaporetech.whackamole.data.entity.Score
 import kotlinx.coroutines.flow.Flow
 
 /**
+ * Author: Ryan Heng Hao Tian
  * Repository that manages all data operations for the game.
  * Acts as a single source of truth, abstracting the data sources
  * (Room database) from the rest of the app.
